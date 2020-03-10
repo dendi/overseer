@@ -28,23 +28,28 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// SlackRequestBody Slack main struct
 type SlackRequestBody struct {
-	Text string 					`json:"text,omitempty"`
-	IconEmoji string 				`json:"icon_emoji,omitempty"`
-	Channel string					`json:"channel"`
-	Blocks []SlackBlock				`json:"blocks"`
+	Username  string       `json:"username"`
+	Text      string       `json:"text,omitempty"`
+	IconEmoji string       `json:"icon_emoji,omitempty"`
+	Channel   string       `json:"channel"`
+	Blocks    []SlackBlock `json:"blocks"`
 }
 
+// SlackBlock Slack block struct
 type SlackBlock struct {
-	Type string			`json:"type"`
-	Text SlackText		`json:"text,omitempty"`
+	Type string    `json:"type"`
+	Text SlackText `json:"text,omitempty"`
 }
 
+// SlackText Slack text struct
 type SlackText struct {
-	Text string			`json:"text"`
-	Type string			`json:"type"`
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
+// SlackBridge ...
 type SlackBridge struct {
 	slackWebhook string
 	slackChannel string
@@ -85,12 +90,12 @@ func (bridge *SlackBridge) process(msg []byte) {
 
 	// Define Title
 	titleText := SlackText{
-		Text: fmt.Sprintf(":warning: *%s %s*", "Error:", testResult.Error),
+		Text: fmt.Sprintf(":warning: *%s %s*", "Error:", *testResult.Error),
 		Type: "mrkdwn",
 	}
 
 	if testResult.IsDedup {
-		titleText.Text = fmt.Sprintf(":warning: *%s %s*", "Error (deduplicated):", testResult.Error)
+		titleText.Text = fmt.Sprintf(":warning: *%s %s*", "Error (deduplicated):", *testResult.Error)
 	}
 
 	if testResult.Recovered {
@@ -124,7 +129,9 @@ func (bridge *SlackBridge) process(msg []byte) {
 	}
 
 	body := SlackRequestBody{
-		Channel: bridge.slackChannel,
+		Username:  "Overseer",
+		IconEmoji: ":godmode:",
+		Channel:   bridge.slackChannel,
 		Blocks: []SlackBlock{
 			title,
 			tag,
@@ -162,27 +169,27 @@ func (bridge *SlackBridge) process(msg []byte) {
 	body.Blocks = append(body.Blocks, date)
 
 	slackBody, _ := json.Marshal(body)
-    req, err := http.NewRequest(http.MethodPost, bridge.slackWebhook, bytes.NewBuffer(slackBody))
-    if err != nil {
+	req, err := http.NewRequest(http.MethodPost, bridge.slackWebhook, bytes.NewBuffer(slackBody))
+	if err != nil {
 		fmt.Printf("Failed to send req to slack %s\n", err.Error())
-        return
-    }
+		return
+	}
 
-    req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 
-    client := &http.Client{Timeout: 10 * time.Second}
-    resp, err := client.Do(req)
-    if err != nil {
-        fmt.Printf("Failed to get response from slack %s\n", err.Error())
-        return
-    }
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Failed to get response from slack %s\n", err.Error())
+		return
+	}
 
-    buf := new(bytes.Buffer)
-    buf.ReadFrom(resp.Body)
-    if buf.String() != "ok" {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "ok" {
 		fmt.Printf("Non-ok response returned from Slack")
-        return
-    }
+		return
+	}
 }
 
 //
@@ -197,7 +204,7 @@ func main() {
 	redisPass := flag.String("redis-pass", "", "Specify the password of the redis queue.")
 	redisQueueKey := flag.String("redis-queue-key", "overseer.results", "Specify the redis queue key to use.")
 
-	slackWebhook := flag.String("slack-webhook", "https://hooks.slack.com/services/T1234/xxxx/xxx", "Slack Webhook URL")
+	slackWebhook := flag.String("slack-webhook", "https://hooks.slack.com/services/T1234/Bxxx/xxx", "Slack Webhook URL")
 	slackChannel := flag.String("slack-channel", "#my-channel", "Slack Channel Name")
 
 	sendTestSuccess := flag.Bool("send-test-success", false, "Send also test results when successful")
@@ -225,7 +232,7 @@ func main() {
 
 	bridge := SlackBridge{
 		slackWebhook:      *slackWebhook,
-		slackChannel:	   *slackChannel,
+		slackChannel:      *slackChannel,
 		SendTestRecovered: *sendTestRecovered,
 		SendTestSuccess:   *sendTestSuccess,
 	}
