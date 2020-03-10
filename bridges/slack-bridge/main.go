@@ -16,10 +16,15 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
+	"github.com/cmaster11/overseer/test"
 	"github.com/go-redis/redis"
 )
 
@@ -32,7 +37,7 @@ type SlackRequestBody struct {
 
 type SlackBlock struct {
 	Type string			`json:"type"`
-	Text SlackText	`json:"text,omitempty"`
+	Text SlackText		`json:"text,omitempty"`
 }
 
 type SlackText struct {
@@ -40,7 +45,7 @@ type SlackText struct {
 	Type string			`json:"type"`
 }
 
-type SlackBrige struct {
+type SlackBridge struct {
 	slackWebhook string
 	slackChannel string
 
@@ -119,21 +124,21 @@ func (bridge *SlackBridge) process(msg []byte) {
 	}
 
 	body := SlackRequestBody{
-		Channel: slackChannel,
+		Channel: bridge.slackChannel,
 		Blocks: []SlackBlock{
 			title,
 			tag,
 			divider,
-		}
+		},
 	}
 
-	if testResult.Details != "" {
-		detail = SlackBlock{
+	if testResult.Details != nil {
+		detail := SlackBlock{
 			Type: "section",
 			Text: SlackText{
-				Text: testResult.Details,
+				Text: *testResult.Details,
 				Type: "mrkdwn",
-			}
+			},
 		}
 		body.Blocks = append(body.Blocks, detail)
 	}
@@ -142,7 +147,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 		Type: "section",
 		Text: SlackText{
 			Type: "mrkdwn",
-			Text: fmt.Sprintf("Input: %s\nTarget: %s\nType: %s", testResult.Input, testResult.Target, testResult.Type)
+			Text: fmt.Sprintf("Input: %s\nTarget: %s\nType: %s", testResult.Input, testResult.Target, testResult.Type),
 		},
 	}
 	body.Blocks = append(body.Blocks, info)
@@ -151,15 +156,16 @@ func (bridge *SlackBridge) process(msg []byte) {
 		Type: "context",
 		Text: SlackText{
 			Type: "mrkdwn",
-			Text: time.Now().UTC().String()
+			Text: time.Now().UTC().String(),
 		},
 	}
 	body.Blocks = append(body.Blocks, date)
 
 	slackBody, _ := json.Marshal(body)
-    req, err := http.NewRequest(http.MethodPost, slackWebhook, bytes.NewBuffer(slackBody))
+    req, err := http.NewRequest(http.MethodPost, bridge.slackWebhook, bytes.NewBuffer(slackBody))
     if err != nil {
-        return err
+		fmt.Printf("Failed to send req to slack %s\n", err.Error())
+        return
     }
 
     req.Header.Add("Content-Type", "application/json")
@@ -167,13 +173,15 @@ func (bridge *SlackBridge) process(msg []byte) {
     client := &http.Client{Timeout: 10 * time.Second}
     resp, err := client.Do(req)
     if err != nil {
-        return err
+        fmt.Printf("Failed to get response from slack %s\n", err.Error())
+        return
     }
 
     buf := new(bytes.Buffer)
     buf.ReadFrom(resp.Body)
     if buf.String() != "ok" {
-        return errors.New("Non-ok response returned from Slack")
+		fmt.Printf("Non-ok response returned from Slack")
+        return
     }
 }
 
@@ -216,8 +224,8 @@ func main() {
 	}
 
 	bridge := SlackBridge{
-		slackWebhook:      slackWebhook,
-		slackChannel:	   slackChannel,
+		slackWebhook:      *slackWebhook,
+		slackChannel:	   *slackChannel,
 		SendTestRecovered: *sendTestRecovered,
 		SendTestSuccess:   *sendTestSuccess,
 	}
@@ -237,7 +245,7 @@ func main() {
 		//   msg[1] will be the value removed from the list.
 		//
 		if len(msg) >= 1 {
-			bridge.Process([]byte(msg[1]))
+			bridge.process([]byte(msg[1]))
 		}
 	}
 }
