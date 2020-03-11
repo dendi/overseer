@@ -189,7 +189,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if buf.String() != "ok" {
-		fmt.Printf("Non-ok response returned from Slack. Code %v, Message %s\n", resp.StatusCode, resp.Body)
+		fmt.Printf("Non-ok response returned from Slack. Code %v, Message %s\n", resp.StatusCode, buf.String())
 		return
 	}
 }
