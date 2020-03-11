@@ -169,6 +169,8 @@ func (bridge *SlackBridge) process(msg []byte) {
 	body.Blocks = append(body.Blocks, date)
 
 	slackBody, _ := json.Marshal(body)
+	fmt.Printf("%s \n", string(slackBody))
+
 	req, err := http.NewRequest(http.MethodPost, bridge.slackWebhook, bytes.NewBuffer(slackBody))
 	if err != nil {
 		fmt.Printf("Failed to send req to slack %s\n", err.Error())
