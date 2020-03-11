@@ -30,23 +30,40 @@ import (
 
 // SlackRequestBody Slack main struct
 type SlackRequestBody struct {
-	Username  string       `json:"username"`
-	Text      string       `json:"text,omitempty"`
-	IconEmoji string       `json:"icon_emoji,omitempty"`
-	Channel   string       `json:"channel"`
-	Blocks    []SlackBlock `json:"blocks"`
+	Username    string            `json:"username"`
+	Text        string            `json:"text,omitempty"`
+	IconEmoji   string            `json:"icon_emoji,omitempty"`
+	Channel     string            `json:"channel"`
+	Blocks      []SlackBlock      `json:"blocks"`
+	Attachments []SlackAttachment `json:"attachments,omitempty"`
 }
 
 // SlackBlock Slack block struct
 type SlackBlock struct {
-	Type string    `json:"type"`
-	Text SlackText `json:"text,omitempty"`
+	Type     string         `json:"type"`
+	Text     SlackText      `json:"text,omitempty"`
+	Elements []SlackElement `json:"elements,omitempty"`
 }
 
 // SlackText Slack text struct
 type SlackText struct {
-	Text string `json:"text"`
-	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+	Type string `json:"type,omitempty"`
+}
+
+// SlackElement Slack element struct
+type SlackElement struct {
+	Type  string `json:"type"`
+	Emoji bool   `json:"emoji"`
+	Text  string `json:"text"`
+}
+
+// SlackAttachment Slack attachment struct
+type SlackAttachment struct {
+	Blocks []SlackBlock `json:"blocks,omitempty"`
+	Text   string       `json:"text,omitempty"`
+	Color  string       `json:"color"`
+	Title  string       `json:"title"`
 }
 
 // SlackBridge ...
@@ -107,21 +124,24 @@ func (bridge *SlackBridge) process(msg []byte) {
 		Text: titleText,
 	}
 
-	tagText := SlackText{
-		Text: "",
-		Type: "mrkdwn",
+	tagElement := SlackElement{
+		Text:  "",
+		Emoji: true,
+		Type:  "plain_text",
 	}
 
 	// Define Tag
 	if testResult.Tag != "" {
-		tagText.Text = fmt.Sprintf("Tag : %s", testResult.Tag)
+		tagElement.Text = fmt.Sprintf("Tag : %s", testResult.Tag)
 	} else {
-		tagText.Text = "Tag : None"
+		tagElement.Text = "Tag : None"
 	}
 
 	tag := SlackBlock{
 		Type: "context",
-		Text: tagText,
+		Elements: []SlackElement{
+			tagElement,
+		},
 	}
 
 	divider := SlackBlock{
@@ -137,6 +157,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 			tag,
 			divider,
 		},
+		Attachments: []SlackAttachment{},
 	}
 
 	if testResult.Details != nil {
@@ -147,7 +168,14 @@ func (bridge *SlackBridge) process(msg []byte) {
 				Type: "mrkdwn",
 			},
 		}
-		body.Blocks = append(body.Blocks, detail)
+
+		attachment := SlackAttachment{
+			Color:  "#a9a9a9",
+			Title:  "Detail",
+			Blocks: []SlackBlock{detail},
+		}
+
+		body.Attachments = append(body.Attachments, attachment)
 	}
 
 	info := SlackBlock{
@@ -159,11 +187,16 @@ func (bridge *SlackBridge) process(msg []byte) {
 	}
 	body.Blocks = append(body.Blocks, info)
 
+	dateElement := SlackElement{
+		Type:  "plain_text",
+		Emoji: true,
+		Text:  time.Now().UTC().String(),
+	}
+
 	date := SlackBlock{
 		Type: "context",
-		Text: SlackText{
-			Type: "mrkdwn",
-			Text: time.Now().UTC().String(),
+		Elements: []SlackElement{
+			dateElement,
 		},
 	}
 	body.Blocks = append(body.Blocks, date)
