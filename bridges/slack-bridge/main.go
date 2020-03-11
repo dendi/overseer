@@ -41,7 +41,7 @@ type SlackRequestBody struct {
 // SlackBlock Slack block struct
 type SlackBlock struct {
 	Type     string         `json:"type"`
-	Text     SlackText      `json:"text,omitempty"`
+	Text     *SlackText     `json:"text,omitempty"`
 	Elements []SlackElement `json:"elements,omitempty"`
 }
 
@@ -121,7 +121,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 
 	title := SlackBlock{
 		Type: "section",
-		Text: titleText,
+		Text: &titleText,
 	}
 
 	tagElement := SlackElement{
@@ -163,7 +163,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 	if testResult.Details != nil {
 		detail := SlackBlock{
 			Type: "section",
-			Text: SlackText{
+			Text: &SlackText{
 				Text: *testResult.Details,
 				Type: "mrkdwn",
 			},
@@ -180,7 +180,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 
 	info := SlackBlock{
 		Type: "section",
-		Text: SlackText{
+		Text: &SlackText{
 			Type: "mrkdwn",
 			Text: fmt.Sprintf("Input: %s\nTarget: %s\nType: %s", testResult.Input, testResult.Target, testResult.Type),
 		},
@@ -243,7 +243,7 @@ func main() {
 	redisQueueKey := flag.String("redis-queue-key", "overseer.results", "Specify the redis queue key to use.")
 
 	slackWebhook := flag.String("slack-webhook", "https://hooks.slack.com/services/T1234/Bxxx/xxx", "Slack Webhook URL")
-	slackChannel := flag.String("slack-channel", "#my-channel", "Slack Channel Name")
+	slackChannel := flag.String("slack-channel", "", "Slack Channel Name")
 
 	sendTestSuccess := flag.Bool("send-test-success", false, "Send also test results when successful")
 	sendTestRecovered := flag.Bool("send-test-recovered", false, "Send also test results when a test recovers from failure (valid only when used together with deduplication rules)")
