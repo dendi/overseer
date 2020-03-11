@@ -38,4 +38,7 @@ spec:
             # If using the webhook queue to clone test results
             #  - -redis-queue-key
             #  - "overseer.results.slack"
+            # If using redis DB
+            #  - -redis-db
+            #  - 1
             - -send-test-recovered=true

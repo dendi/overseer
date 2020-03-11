@@ -202,6 +202,7 @@ func main() {
 	//
 	redisHost := flag.String("redis-host", "127.0.0.1:6379", "Specify the address of the redis queue.")
 	redisPass := flag.String("redis-pass", "", "Specify the password of the redis queue.")
+	redisDB := flag.Int("redis-db", 0, "Specify the database-number for redis.")
 	redisQueueKey := flag.String("redis-queue-key", "overseer.results", "Specify the redis queue key to use.")
 
 	slackWebhook := flag.String("slack-webhook", "https://hooks.slack.com/services/T1234/Bxxx/xxx", "Slack Webhook URL")
@@ -218,7 +219,7 @@ func main() {
 	r := redis.NewClient(&redis.Options{
 		Addr:     *redisHost,
 		Password: *redisPass,
-		DB:       0, // use default DB
+		DB:       *redisDB,
 	})
 
 	//
