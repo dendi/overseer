@@ -179,7 +179,6 @@ func (bridge *SlackBridge) process(msg []byte) {
 
 		attachment := SlackAttachment{
 			Color: "#a9a9a9",
-			Title: "Detail",
 			Blocks: []SlackBlock{
 				title,
 				detail,
