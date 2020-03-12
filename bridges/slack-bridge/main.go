@@ -150,7 +150,7 @@ func (bridge *SlackBridge) process(msg []byte) {
 
 	body := SlackRequestBody{
 		Username:  "Overseer",
-		IconEmoji: ":godmode:",
+		IconEmoji: ":eyes:",
 		Channel:   bridge.slackChannel,
 		Blocks: []SlackBlock{
 			title,
