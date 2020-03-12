@@ -63,7 +63,7 @@ type SlackAttachment struct {
 	Blocks []SlackBlock `json:"blocks,omitempty"`
 	Text   string       `json:"text,omitempty"`
 	Color  string       `json:"color"`
-	Title  string       `json:"title"`
+	Title  string       `json:"title,omitempty"`
 }
 
 // SlackBridge ...
@@ -161,6 +161,14 @@ func (bridge *SlackBridge) process(msg []byte) {
 	}
 
 	if testResult.Details != nil {
+		title := SlackBlock{
+			Type: "section",
+			Text: &SlackText{
+				Text: "*Details*",
+				Type: "mrkdwn",
+			},
+		}
+
 		detail := SlackBlock{
 			Type: "section",
 			Text: &SlackText{
@@ -170,9 +178,12 @@ func (bridge *SlackBridge) process(msg []byte) {
 		}
 
 		attachment := SlackAttachment{
-			Color:  "#a9a9a9",
-			Title:  "Detail",
-			Blocks: []SlackBlock{detail},
+			Color: "#a9a9a9",
+			Title: "Detail",
+			Blocks: []SlackBlock{
+				title,
+				detail,
+			},
 		}
 
 		body.Attachments = append(body.Attachments, attachment)
