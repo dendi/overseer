@@ -7,7 +7,7 @@
 //
 //     $ ./slack-bridge -slack=slack-webhook-url
 //
-// When a test fails an slack will sent via SMTP
+// When a test fails an slack will sent via Slack Webhook
 //
 // Eka
 // --
