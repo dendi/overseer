@@ -66,6 +66,9 @@ type Test struct {
 
 	// PeriodTestThreshold defines the min percentage [0-1] of failing tests in a period which will trigger an alert.
 	PeriodTestThreshold *float32
+
+	// If > 0, tests which resolve hostnames will run only for the first MaxTargetsCount found target
+	MaxTargetsCount int
 }
 
 // Sanitize returns a copy of the input string, but with any password

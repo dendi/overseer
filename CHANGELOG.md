@@ -1,5 +1,14 @@
 # Changelog
 
+## [2020/05/06] cmaster11/overseer:1.12.10
+
+* HTTP test has new option:
+    * `follow-redirect true|(\d+)`: allows following HTTP redirects.
+        * `follow-redirect true`: allows max 10 redirects
+        * `follow-redirect 25`: allows max 25 (or any other used number) redirects
+* All tests which resolve hostnames have a new option:
+    * `max-targets 2`: forces the test to run against only the first 2 (or any other number) found targets of the hostname, instead of all of them.
+
 ## [2019/12/17] cmaster11/overseer:1.12.8
 
 * BREAKING: new behavior for `k8s-event-watcher` rules. Events will now be marked as errors **only** if `errorRules` rules exist and are matched:

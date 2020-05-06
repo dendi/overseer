@@ -421,6 +421,17 @@ func (s *Parser) ParseLine(input string, cb ParsedTest) (test.Test, error) {
 			// We don't want to pass a non-test var to the actual test
 			delete(result.Arguments, arg)
 			continue
+		case "max-targets":
+			maxTargets, err := strconv.ParseInt(val, 10, 32)
+			if err != nil {
+				return result, fmt.Errorf("non-numeric argument '%s' for test-type '%s' in input '%s'", arg, testType, input)
+			}
+
+			result.MaxTargetsCount = int(maxTargets)
+
+			// We don't want to pass a non-test var to the actual test
+			delete(result.Arguments, arg)
+			continue
 		}
 
 		//
