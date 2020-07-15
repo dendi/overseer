@@ -90,10 +90,10 @@ expiration period is assumed to be days:
 //
 //    target => "176.9.183.100"
 //
-func (s *SSLTest) RunTest(tst test.Test, target string, opts test.Options) error {
+func (s *SSLTest) RunTest(tst test.Test, _ string, opts test.Options) error {
 
 	var err error
-	target = tst.Target
+	target := tst.Target
 
 	//
 	// The default expiration-time 14 days.

@@ -92,6 +92,12 @@
 // NOTE: This test deliberately does not follow redirections, to allow
 // enhanced testing.
 //
+// To follow redirects, use the option:
+//
+//    with follow-redirect true <- max 10 follows (default)
+//
+//    with follow-redirect 20 <- max 20 follows
+//
 
 package protocols
 
@@ -101,6 +107,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -130,13 +137,14 @@ func (s *HTTPTest) Arguments() map[string]string {
 		"password":            ".*",
 		"pattern":             ".*",
 		"not-pattern":         ".*",
-		"status":              "^(any|[0-9]+(?:,[0-9]+)*)$",
+		"status":              "^(any|[0-9]{3}(?:,[0-9]{3})*)$",
 		"tls":                 "insecure",
 		"username":            ".*",
 		"connect-timeout":     `^[+]?([0-9]*(\.[0-9]*)?[a-z]+)+$`,
 		"connect-retries":     `^\d+$`,
 		"tls-timeout":         `^[+]?([0-9]*(\.[0-9]*)?[a-z]+)+$`,
 		"resp-header-timeout": `^[+]?([0-9]*(\.[0-9]*)?[a-z]+)+$`,
+		"follow-redirect":     `^true|false|(\d+)$`,
 	}
 	return known
 }
@@ -241,6 +249,12 @@ HTTP Tester
 
  Do note that the HTTP-probe never follow redirections, to allow enhanced
  testing.
+
+ To follow redirects, use the option:
+ 
+    with follow-redirect true <- max 10 follows (default)
+
+    with follow-redirect 20 <- max 20 follows
 `
 	return str
 }
@@ -326,11 +340,11 @@ func (s *HTTPTest) RunTest(tst test.Test, target string, opts test.Options) erro
 	// we don't rewrite anything, don't do anything manually, and
 	// instead just connect to the right IP by magic.
 	//
-	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+	dial := func(ctx context.Context, network, _ string) (net.Conn, error) {
 		//
 		// Assume an IPv4 address by default.
 		//
-		addr = fmt.Sprintf("%s:%s", address, port)
+		addr := fmt.Sprintf("%s:%s", address, port)
 
 		//
 		// If we find a ":" we know it is an IPv6 address though
@@ -400,17 +414,31 @@ func (s *HTTPTest) RunTest(tst test.Test, target string, opts test.Options) erro
 		timeout = *tst.Timeout
 	}
 
+	maxFollowRedirects := 0
+
+	argFollowRedirect := tst.Arguments["follow-redirect"]
+	if parsed, errParse := strconv.ParseInt(argFollowRedirect, 10, 32); errParse == nil {
+		maxFollowRedirects = int(parsed)
+	} else if argFollowRedirect == "true" {
+		maxFollowRedirects = 10
+	}
+
 	//
 	// Create a client with a timeout, disabled redirection, and
 	// the magical transport we've just created.
 	//
 	var netClient = &http.Client{
-		Timeout: timeout,
-
+		Timeout:   timeout,
+		Transport: tr,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if maxFollowRedirects > 0 {
+				maxFollowRedirects--
+				lastRequest := via[len(via)-1]
+				log.Printf("following redirect from %s to %s", lastRequest.URL.String(), req.URL.String())
+				return nil
+			}
 			return http.ErrUseLastResponse
 		},
-		Transport: tr,
 	}
 
 	//
@@ -486,7 +514,7 @@ func (s *HTTPTest) RunTest(tst test.Test, target string, opts test.Options) erro
 	//
 	// The default status-code we accept as OK
 	//
-	allowedStatuses := []int{http.StatusOK}
+	var allowedStatuses []int
 
 	//
 	// Did the user want to look for a specific status-code?
@@ -502,6 +530,10 @@ func (s *HTTPTest) RunTest(tst test.Test, target string, opts test.Options) erro
 
 			allowedStatuses = append(allowedStatuses, allowedStatus)
 		}
+
+	} else {
+
+		allowedStatuses = append(allowedStatuses, http.StatusOK)
 
 	}
 
